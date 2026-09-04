@@ -18,7 +18,7 @@ FramSat-1 transmits periodic AX.25 UI telemetry beacons on the 70 cm amateur sat
 | **Scrambler** | G3RUH ($1 + x^{12} + x^{17}$, Mask: `0x21`) |
 | **Bit Encoding** | NRZI |
 | **Frame Format** | AX.25 UI-Frame (Unnumbered Information) |
-| **Satellite Callsign (Source)** | `LA1NGS` |
+| **Satellite Callsign (Source)** | `LA1ORB` |
 | **Destination Address** | `CQ` |
 | **PID** | `0xF0` (No Layer 3 Protocol) |
 
