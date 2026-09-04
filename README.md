@@ -17,26 +17,6 @@ FramSat-1 transmits periodic AX.25 UI telemetry beacons on the 70 cm amateur sat
 
 ---
 
-## ⚡ Quickstart: Step-by-Step
-
-### Option A: Using the Graphical Interface (Recommended)
-1. Plug in your **RTL-SDR** dongle.
-2. Open **`framsat1_rtlsdr_rx.grc`** in GNU Radio Companion.
-3. Enable the `Socket PDU` block if you want live streaming, or leave `Message Debug` active to view frames in the GRC console.
-4. Press **Execute (Play)**.
-
-### Option B: Running Headless / Command Line
-Run the SDR receiver in the background and attach the live decoder:
-```bash
-# Terminal 1: Start the RTL-SDR receiver
-python3 framsat1_rtlsdr_rx.py
-
-# Terminal 2: Listen and decode live frames
-python3 framsat1_decoder.py --listen
-```
-
----
-
 ## 📡 Radio Frequency & Modulation Specifications
 
 | Parameter | Specification |
@@ -70,22 +50,29 @@ The recommended receiver flowgraph (`framsat1_rtlsdr_rx.grc`) is optimized for s
 
 ---
 
-## 💻 Using the Python Frame Decoder (`framsat1_decoder.py`)
+## ⚡ How to Run & Decode
 
-The included Python script can decode historical frames or connect live to GNU Radio during a satellite pass.
+### Mode 1: Graphical Interface (GNU Radio Companion)
+1. Plug in your **RTL-SDR** dongle.
+2. Open **`framsat1_rtlsdr_rx.grc`** in GNU Radio Companion.
+3. Press **Execute (Play)**. Received frames will print directly in the `Message Debug` console.
+*(Optional: Enable the `Socket PDU` block to simultaneously stream packets over TCP).*
 
-### 1. Offline Frame Inspection
-Pass a received hexadecimal string as a command-line argument:
+### Mode 2: Headless Live Reception (Command Line)
+For server setups (e.g. Raspberry Pi), run the SDR receiver in the background and attach the live decoder:
+```bash
+# Terminal 1: Start the RTL-SDR receiver
+python3 framsat1_rtlsdr_rx.py
+
+# Terminal 2: Listen and decode live frames over TCP (port 52001)
+python3 framsat1_decoder.py --listen
+```
+
+### Mode 3: Offline Frame Inspection
+Pass a received hexadecimal string as a command-line argument to parse historical or recorded frames:
 ```bash
 python3 framsat1_decoder.py 86A240404040609882629EA4846103F048656C6C6F2066726F6D206F7262697421
 ```
-
-### 2. Live Demodulation via GNU Radio
-In `framsat1_rtlsdr_rx.grc`, enable the **`Socket PDU`** block (TCP Server on port `52001`). Then run:
-```bash
-python3 framsat1_decoder.py --listen
-```
-The script will connect to GNU Radio and print decoded satellite frames in real time as the satellite passes overhead!
 
 ---
 
