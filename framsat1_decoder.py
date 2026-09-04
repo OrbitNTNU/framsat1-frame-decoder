@@ -55,7 +55,9 @@ def parse_framsat_telemetry(payload_bytes: bytes):
         " ──+──────────+──────────────────────────────────+─────────────────────────────"
     )
 
-    sample_fmt = "<BHHHHBBBBBI"
+    # 1B (id) + 4H (gss) + 5B (ess) + 1H (sample_size) + 1I (time_sec) = 20 bytes!
+    sample_fmt = "<BHHHHBBBBBHI"
+
     for i in range(min(num_samples, 9)):
       chunk = sensor_bytes[i * 20 : (i + 1) * 20]
       if len(chunk) == 20:
@@ -127,7 +129,6 @@ def listen_live_gnuradio(host="127.0.0.1", port=52001):
 
 
 if __name__ == "__main__":
-  # Full 215-byte FramSat-1 test vector with health telemetry AND 9x sensor samples:
   FULL_TEST_FRAME = (
       "86A240404040609882629EA4846103F04653312E3001015500000002003A20100E0000"
       "0100045203D2002D007854FFF0B41400060E0000"
