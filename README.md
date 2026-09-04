@@ -38,20 +38,20 @@ The recommended receiver flowgraph (`framsat1_rx.grc`) is optimized for standard
 
 ---
 
-## 💻 Using the Python Frame Decoder (`framsat_decoder.py`)
+## 💻 Using the Python Frame Decoder (`framsat1_decoder.py`)
 
 The included Python script can decode historical frames or connect live to GNU Radio during a satellite pass.
 
 ### 1. Offline Frame Inspection
 Pass a received hexadecimal string as a command-line argument:
 ```bash
-python3 framsat_decoder.py 86A240404040609882629C8EA66103F0534354657374
+python3 framsat1_decoder.py 86A240404040609882629C8EA66103F0534354657374
 ```
 
 ### 2. Live Demodulation via GNU Radio
 In `framsat1_rx.grc`, enable the **`Socket PDU`** block (TCP Server on port `52001`). Then run:
 ```bash
-python3 framsat_decoder.py --listen
+python3 framsat1_decoder.py --listen
 ```
 The script will connect to GNU Radio and print decoded satellite frames in real time as the satellite passes overhead!
 
