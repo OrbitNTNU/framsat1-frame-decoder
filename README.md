@@ -35,6 +35,23 @@ FramSat-1 transmits periodic AX.25 UI telemetry beacons on the 70 cm amateur sat
 
 ---
 
+## 📊 Housekeeping Telemetry Format (`struct fs_bcn`)
+
+Every telemetry beacon begins at AX.25 payload offset index 16. All multi-byte integers are **Little-Endian**:
+
+| Offset | Size | Field | Type | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| **0–4** | 5 B | `sign` | ASCII | Beacon signature: always **`"FS1.0"`** |
+| **5** | 1 B | `id` | `uint8` | Beacon sequence ID counter |
+| **6** | 1 B | `type` | `uint8` | `1` = Default Mode, `2` = LEOP (Launch/Early Orbit) |
+| **7** | 1 B | `rssi` | `uint8` | Satellite receiver RSSI level |
+| **8–9** | 2 B | `cmd_heard` | `uint16` | Telecommands accepted by satellite |
+| **10** | 1 B | `eps.mask` | `uint8` | EPS subsystem power mask |
+| **11–12** | 2 B | `bootcount` | `uint16` | Total OBC reboot counter |
+| **13–14** | 2 B | `battery` | `uint16` | Battery voltage ($V = \text{val} / 1000.0$ V) |
+| **15–18** | 4 B | `time_sec` | `uint32` | Satellite uptime in seconds |
+| **19–198** | 180 B | `pay` | Array[9] | 9 payload sensor measurement arrays |
+
 ## 🛠️ GNU Radio Receiver Pipeline
 
 > **Prerequisites:** Requires GNU Radio with `gr-satellites` and `gr-osmosdr` installed (both are included out-of-the-box in [Radioconda](https://github.com/radioconda)).
@@ -71,7 +88,7 @@ python3 framsat1_decoder.py --listen
 ### Mode 3: Offline Frame Inspection
 Pass a received hexadecimal string as a command-line argument to parse historical or recorded frames:
 ```bash
-python3 framsat1_decoder.py 86A240404040609882629EA4846103F048656C6C6F2066726F6D206F7262697421
+python3 framsat1_decoder.py 86A240404040609882629EA4846103F04653312E3001015500000002003A20100E0000
 ```
 
 ---
