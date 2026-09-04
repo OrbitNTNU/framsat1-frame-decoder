@@ -9,31 +9,22 @@ EXPECTED_CALLSIGN = "LA1ORB"
 
 def parse_framsat_telemetry(payload_bytes: bytes):
   """Parses the FramSat-1 Housekeeping Telemetry struct (fs_bcn)."""
-  # fs_bcn header format:
-  # 5s: sign ("FS1.0")
-  # B:  id (uint8_t)
-  # B:  type (enum fs_bcn_type: 1=DEFAULT, 2=LEOP)
-  # B:  rssi (uint8_t)
-  # H:  cmd_heard (uint16_t, little-endian)
-  # B:  eps.mask (uint8_t)
-  # H:  eps.bootcount (uint16_t, little-endian)
-  # H:  eps.battery (uint16_t, mV, little-endian)
-  # I:  time_sec (uint32_t, uptime seconds, little-endian)
-  fmt = "<5sBBBHBHHI"
-  hdr_size = struct.calcsize(fmt)
+  # 1. Parse Health & Status Header (19 bytes)
+  fmt_health = "<5sBBBHBHHI"
+  hdr_size = struct.calcsize(fmt_health)
 
   if len(payload_bytes) < hdr_size:
     print(f"   Payload Raw Hex: {payload_bytes.hex().upper()}")
     return
 
   sign, bcn_id, bcn_type, rssi, cmd_heard, eps_mask, bootcount, battery, uptime = (
-      struct.unpack(fmt, payload_bytes[:hdr_size])
+      struct.unpack(fmt_health, payload_bytes[:hdr_size])
   )
 
   mode_str = (
       "LEOP (Deployment)" if bcn_type == 2 else "DEFAULT (Nominal Orbit)"
   )
-  v_bat = battery / 1000.0  # Convert mV to V
+  v_bat = battery / 1000.0
   uptime_hrs = uptime / 3600.0
 
   print("\n   ─── [ FramSat-1 Housekeeping Telemetry ] ───")
@@ -46,12 +37,45 @@ def parse_framsat_telemetry(payload_bytes: bytes):
   print(f"   Battery Voltage:    {v_bat:.3f} V ({battery} mV)")
   print(f"   Satellite Uptime:   {uptime} s ({uptime_hrs:.2f} hours)")
 
-  payload_data = payload_bytes[hdr_size:]
-  if len(payload_data) > 0:
+  # 2. Parse 9x Payload Sensor Samples (GSS Sun Sensor & ESS Earth Sensor)
+  sensor_bytes = payload_bytes[hdr_size:]
+  num_samples = len(sensor_bytes) // 20
+
+  if num_samples > 0:
     print(
-        f"   Payload Sensor Data:{len(payload_data)} bytes (GSS/ESS raw sensor"
-        " array)"
+        f"\n   ─── [ Payload: {num_samples}x Sensor Samples (GSS Sun & ESS"
+        " Earth Sensors) ] ───"
     )
+    print(
+        "   # | Time (s) | Sun Sensor GSS (a, b, c, d)      | Earth Sensor ESS"
+        " (x, y, illum)"
+    )
+    print(
+        "  "
+        " ──+──────────+──────────────────────────────────+─────────────────────────────"
+    )
+
+    sample_fmt = "<BHHHHBBBBBI"
+    for i in range(min(num_samples, 9)):
+      chunk = sensor_bytes[i * 20 : (i + 1) * 20]
+      if len(chunk) == 20:
+        (
+            s_id,
+            g_a,
+            g_b,
+            g_c,
+            g_d,
+            e_x,
+            e_y,
+            i1,
+            i2,
+            i3,
+            s_size,
+            s_time,
+        ) = struct.unpack(sample_fmt, chunk)
+        gss_str = f"{g_a:4d}, {g_b:4d}, {g_c:4d}, {g_d:4d}"
+        ess_str = f"X={e_x:3d}, Y={e_y:3d}, Illum=[{i1},{i2},{i3}]"
+        print(f"   {i+1:1d} | {s_time:<8d} | {gss_str:<32s} | {ess_str}")
 
 
 def parse_framsat_frame(frame_bytes: bytes):
@@ -60,7 +84,6 @@ def parse_framsat_frame(frame_bytes: bytes):
     print("[-] Frame rejected: Length is less than 16 bytes.")
     return
 
-  # AX.25 address fields (reverse 1-bit left-shift)
   dest_call = "".join(chr(b >> 1) for b in frame_bytes[0:6]).strip()
   src_call = "".join(chr(b >> 1) for b in frame_bytes[7:13]).strip()
   control_byte = frame_bytes[14]
@@ -69,7 +92,7 @@ def parse_framsat_frame(frame_bytes: bytes):
 
   now_utc = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
 
-  print("\n" + "=" * 55)
+  print("\n" + "=" * 65)
   print(f"🛰️  FramSat-1 Frame Received at {now_utc}")
   print(f"   Destination:        {dest_call}")
   print(f"   Source:             {src_call} (Expected: {EXPECTED_CALLSIGN})")
@@ -77,15 +100,13 @@ def parse_framsat_frame(frame_bytes: bytes):
   print(f"   PID:                0x{pid_byte:02X}")
   print(f"   Total Frame Length: {len(frame_bytes)} bytes")
 
-  # Detect if payload is a FramSat-1 Housekeeping Beacon ("FS1.0")
   if payload_raw.startswith(b"FS1.0"):
     parse_framsat_telemetry(payload_raw)
   else:
-    # Generic / Custom ASCII Payload
     print(f"   Payload Text:       '{payload_raw.decode('latin-1', 'replace')}'")
     print(f"   Payload Hex:        {payload_raw.hex().upper()}")
 
-  print("=" * 55 + "\n")
+  print("=" * 65 + "\n")
 
 
 def listen_live_gnuradio(host="127.0.0.1", port=52001):
@@ -106,6 +127,20 @@ def listen_live_gnuradio(host="127.0.0.1", port=52001):
 
 
 if __name__ == "__main__":
+  # Full 215-byte FramSat-1 test vector with health telemetry AND 9x sensor samples:
+  FULL_TEST_FRAME = (
+      "86A240404040609882629EA4846103F04653312E3001015500000002003A20100E0000"
+      "0100045203D2002D007854FFF0B41400060E0000"
+      "021A044E03C80032007A52FFF1B51400080E0000"
+      "0330044503BE0037007D50FEF2B614000A0E0000"
+      "0445043C03B5003C00804DFDF3B714000C0E0000"
+      "055A043303AC004100824BFCF4B814000E0E0000"
+      "066F042A03A20046008549FBF5B91400100E0000"
+      "078404210399004B008747FAF6BA1400120E0000"
+      "0899041803900050008A45F9F7BB1400140E0000"
+      "09AE040F03860055008C43F8F8BC1400160E0000"
+  )
+
   if len(sys.argv) > 1:
     if sys.argv[1] == "--listen":
       listen_live_gnuradio()
@@ -113,13 +148,5 @@ if __name__ == "__main__":
       raw_hex = sys.argv[1].replace(" ", "")
       parse_framsat_frame(bytes.fromhex(raw_hex))
   else:
-    # Default test vector: Valid AX.25 frame with simulated FS1.0 telemetry
-    # Battery: 8.250V (8250 mV = 0x203A), Uptime: 3600s (0x0E10), Bootcount: 2
-    mock_frame_hex = (
-        "86A240404040609882629EA4846103F04653312E3001015500000002003A20100E0000"
-    )
-    print("[*] Running verification against built-in test vector:\n")
-    parse_framsat_frame(bytes.fromhex(mock_frame_hex))
-    print("Usage:")
-    print("  python3 framsat1_decoder.py <HEX_STRING>")
-    print("  python3 framsat1_decoder.py --listen")
+    print("[*] Running verification against full 215-byte test vector:\n")
+    parse_framsat_frame(bytes.fromhex(FULL_TEST_FRAME))
