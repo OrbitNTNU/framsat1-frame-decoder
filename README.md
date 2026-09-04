@@ -57,7 +57,7 @@ The script will connect to GNU Radio and print decoded satellite frames in real 
 ---
 
 ## 📄 Full PDF Guide
-For complete technical details, download the included [FramSat1_Reception_Guide.pdf](FramSat1_Reception_Guide.pdf).
+For complete technical details, download the included [FramSat_1_Reception_Guide.pdf](FramSat_1_Reception_Guide.pdf).
 
 ## 📬 Submitting Reception Reports
 We welcome reception reports and baseband recordings! Please submit reports via email to **contact@orbitntnu.com** or upload observations to the **[SatNOGS Network](https://db.satnogs.org/)** under satellite **FramSat-1**.
