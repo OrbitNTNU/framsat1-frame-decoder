@@ -1,2 +1,63 @@
-# framsat1-frame-decoder
-FramSat-1 GNU Radio receiver flowgraph and AX.25 frame decoder for amateur radio operators.
+# 🛰️ FramSat-1 Downlink Frame Decoder & Receiver
+
+Open-source GNU Radio Companion (GRC) receiver pipeline and Python frame decoder for the **FramSat-1** CubeSat by [Orbit NTNU](https://orbitntnu.com).
+
+FramSat-1 transmits periodic AX.25 UI telemetry beacons on the 70 cm amateur satellite band. This repository provides amateur radio operators with everything needed to receive, demodulate, and extract raw packet frames.
+
+---
+
+## 📡 Radio Frequency & Modulation Specifications
+
+| Parameter | Specification |
+| :--- | :--- |
+| **Downlink Frequency** | **435.141 MHz** (IARU Coordinated) |
+| **Modulation** | GFSK (2-FSK with Gaussian filter) |
+| **Baud Rate** | 9600 bps |
+| **Frequency Deviation ($\Delta f$)** | $\pm 3.0$ kHz ($h \approx 0.625$) |
+| **Pulse Shaping** | Gaussian ($BT = 0.5$ / $BT = 1.0$) |
+| **Scrambler** | G3RUH ($1 + x^{12} + x^{17}$, Mask: `0x21`) |
+| **Bit Encoding** | NRZI |
+| **Frame Format** | AX.25 UI-Frame (Unnumbered Information) |
+| **Satellite Callsign (Source)** | `LA1NGS` |
+| **Destination Address** | `CQ` |
+| **PID** | `0xF0` (No Layer 3 Protocol) |
+
+---
+
+## 🛠️ GNU Radio Receiver Pipeline
+
+The recommended receiver flowgraph (`framsat1_rx.grc`) is optimized for standard **RTL-SDR** dongles:
+
+![FramSat-1 GNU Radio Flowgraph](flowgraph.png)
+
+1. **RTL-SDR Source:** Samples at a stable `2.4 MSps` on `435.141 MHz`.
+2. **Low Pass Filter (Decimator):** Decimates by `25` down to `96 kSps` with a `40 kHz` cutoff to suppress adjacent out-of-band noise.
+3. **FSK Demodulator & NRZI:** Demodulates the GFSK signal and decodes transitions.
+4. **Descrambler & HDLC Deframer:** Descrambles G3RUH and validates the 16-bit CRC-CCITT (FCS).
+
+---
+
+## 💻 Using the Python Frame Decoder (`framsat_decoder.py`)
+
+The included Python script can decode historical frames or connect live to GNU Radio during a satellite pass.
+
+### 1. Offline Frame Inspection
+Pass a received hexadecimal string as a command-line argument:
+```bash
+python3 framsat_decoder.py 86A240404040609882629C8EA66103F0534354657374
+```
+
+### 2. Live Demodulation via GNU Radio
+In `framsat1_rx.grc`, enable the **`Socket PDU`** block (TCP Server on port `52001`). Then run:
+```bash
+python3 framsat_decoder.py --listen
+```
+The script will connect to GNU Radio and print decoded satellite frames in real time as the satellite passes overhead!
+
+---
+
+## 📄 Full PDF Guide
+For complete technical details, download the included [FramSat1_Reception_Guide.pdf](FramSat1_Reception_Guide.pdf).
+
+## 📬 Submitting Reception Reports
+We welcome reception reports and baseband recordings! Please submit reports via email to **contact@orbitntnu.com** or upload observations to the **[SatNOGS Network](https://db.satnogs.org/)** under satellite **FramSat-1**.
