@@ -57,7 +57,7 @@ python3 framsat1_decoder.py --listen
 
 ## 🛠️ GNU Radio Receiver Pipeline
 
-> **Prerequisites:** Requires GNU Radio with `gr-satellites` and `gr-osmosdr` installed (both are included out-of-the-box in [Radioconda](https://github.com/ryanvolz/radioconda)).
+> **Prerequisites:** Requires GNU Radio with `gr-satellites` and `gr-osmosdr` installed (both are included out-of-the-box in [Radioconda](https://github.com/radioconda)).
 
 The recommended receiver flowgraph (`framsat1_rtlsdr_rx.grc`) is optimized for standard **RTL-SDR** dongles:
 
