@@ -81,7 +81,7 @@ def parse_framsat_telemetry(payload_bytes: bytes):
 
 
 def parse_framsat_frame(frame_bytes: bytes):
-  """Parses a received frame (handles both direct HDLC and AX.25 UI frames)."""
+  """Parses a received frame (dynamically locates FS1.0 wherever it is)."""
   if len(frame_bytes) < 5:
     print("[-] Frame rejected: Length is less than 5 bytes.")
     return
@@ -92,32 +92,34 @@ def parse_framsat_frame(frame_bytes: bytes):
   print(f"🛰️  FramSat-1 Frame Received at {now_utc}")
   print(f"   Total Frame Length: {len(frame_bytes)} bytes")
 
-  # CASE 1: Direct HDLC beacon from real satellite (starts with "FS1.0" at byte 0)
-  if frame_bytes.startswith(b"FS1.0"):
-    print("   Framing Type:       Direct HDLC (No AX.25 callsign header)")
-    parse_framsat_telemetry(frame_bytes)
+  # 1. SØK DYNAMISK ETTER "FS1.0" I HELE PAKKEN:
+  idx = frame_bytes.find(b"FS1.0")
 
-  # CASE 2: Encapsulated in AX.25 UI-frame (starts with "FS1.0" at byte 16)
-  elif len(frame_bytes) >= 16 and frame_bytes[16:].startswith(b"FS1.0"):
-    dest_call = "".join(chr(b >> 1) for b in frame_bytes[0:6]).strip()
-    src_call = "".join(chr(b >> 1) for b in frame_bytes[7:13]).strip()
-    control_byte = frame_bytes[14]
-    pid_byte = frame_bytes[15]
+  if idx != -1:
+    print(f"   Telemetry Found:    Offset index {idx}")
+    # Hvis det er en AX.25-header foran (minst 16 bytes)
+    if idx >= 16:
+      dest_call = "".join(chr(b >> 1) for b in frame_bytes[0:6]).strip()
+      src_call = "".join(chr(b >> 1) for b in frame_bytes[7:13]).strip()
+      print(f"   Header:             AX.25 ({src_call} -> {dest_call})")
+    elif idx > 0:
+      print(
+          f"   Transport Header:   {frame_bytes[:idx].hex().upper()} ({idx}"
+          " bytes)"
+      )
+    else:
+      print("   Framing Type:       Direct HDLC (starts at byte 0)")
 
-    print("   Framing Type:       AX.25 UI-Frame")
-    print(f"   Destination:        {dest_call}")
-    print(f"   Source:             {src_call} (Expected: {EXPECTED_CALLSIGN})")
-    print(f"   Control:            0x{control_byte:02X} (UI-Frame)")
-    print(f"   PID:                0x{pid_byte:02X}")
-    parse_framsat_telemetry(frame_bytes[16:])
+    # Send alt fra "FS1.0" og utover til telemetritolkeren!
+    parse_framsat_telemetry(frame_bytes[idx:])
 
-  # CASE 3: Generic text or raw payload
+  # 2. Hvis pakken ikke inneholder "FS1.0"
   else:
     print(
         f"   Payload Text:      "
         f" '{frame_bytes.decode('latin-1', 'replace')}'"
     )
-    print(f"   Payload Hex:        {frame_bytes.hex().upper()}")
+    print(f"   Payload Raw Hex:    {frame_bytes.hex().upper()}")
 
   print("=" * 65 + "\n")
 
