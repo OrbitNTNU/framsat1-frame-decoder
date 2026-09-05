@@ -37,7 +37,7 @@ FramSat-1 transmits periodic AX.25 UI telemetry beacons on the 70 cm amateur sat
 
 ## 📊 Housekeeping Telemetry Format
 
-Every telemetry beacon begins at AX.25 payload offset index 16. All multi-byte integers are **Little-Endian**:
+Every telemetry beacon begins at AX.25 payload offset index 16. All multi-byte integers are Little-Endian:
 
 | Offset | Size | Field | Type | Description |
 | :--- | :--- | :--- | :--- | :--- |
