@@ -1,5 +1,4 @@
-# 🛰️ FramSat-1 Downlink Frame Decoder & Receiver
-
+# 🛰️ FramSat-1 Downlink Reception & Telemetry Decoder
 Open-source GNU Radio Companion (GRC) receiver pipeline and Python frame decoder for the **FramSat-1** CubeSat by [Orbit NTNU](https://orbitntnu.com).
 
 FramSat-1 transmits periodic AX.25 UI telemetry beacons on the 70 cm amateur satellite band. This repository provides amateur radio operators with everything needed to receive, demodulate, and extract raw packet frames.
