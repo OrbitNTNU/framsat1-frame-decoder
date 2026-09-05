@@ -36,7 +36,7 @@ FramSat-1 transmits periodic AX.25 UI telemetry beacons on the 70 cm amateur sat
 
 ## 📊 Housekeeping Telemetry Format
 
-Telemetry beacons are transmitted as packed binary frames starting with signature `"FS1.0"` (at byte offset 0 for direct HDLC, or offset 16 if encapsulated in AX.25). All multi-byte integers are in Little-Endian format (least significant byte first):
+Telemetry beacons are transmitted as packed binary frames starting with signature `"FS1.0"` (at byte offset 0 for direct HDLC, or offset 16 if encapsulated in AX.25). All multi-byte integers are in Big-Endian format (most significant byte first):
 
 | Offset | Size | Field | Type | Description |
 | :---: | :---: | :--- | :---: | :--- |
