@@ -37,20 +37,20 @@ FramSat-1 transmits periodic AX.25 UI telemetry beacons on the 70 cm amateur sat
 
 ## 📊 Housekeeping Telemetry Format
 
-Every telemetry beacon begins at AX.25 payload offset index 16. All multi-byte integers are Little-Endian:
+Every telemetry beacon begins at AX.25 payload offset index 16. All multi-byte integers are encoded in standard Little-Endian format (least significant byte first):
 
 | Offset | Size | Field | Type | Description |
-| :--- | :--- | :--- | :--- | :--- |
-| **0–4** | 5 B | `sign` | ASCII | Beacon signature: always **`"FS1.0"`** |
-| **5** | 1 B | `id` | `uint8` | Beacon sequence ID counter |
-| **6** | 1 B | `type` | `uint8` | `1` = Default Mode, `2` = LEOP (Launch/Early Orbit) |
-| **7** | 1 B | `rssi` | `uint8` | Satellite receiver RSSI level |
-| **8–9** | 2 B | `cmd_heard` | `uint16` | Telecommands accepted by satellite |
-| **10** | 1 B | `eps.mask` | `uint8` | EPS subsystem power mask |
-| **11–12** | 2 B | `bootcount` | `uint16` | Total OBC reboot counter |
-| **13–14** | 2 B | `battery` | `uint16` | Battery voltage ($V = \text{val} / 1000.0$ V) |
-| **15–18** | 4 B | `time_sec` | `uint32` | Satellite uptime in seconds |
-| **19–198** | 180 B | `pay` | Array[9] | 9 payload sensor measurement arrays |
+| :---: | :---: | :--- | :---: | :--- |
+| **0–4** | 5 B | `signature` | ASCII | Beacon sync signature: always **`"FS1.0"`** |
+| **5** | 1 B | `beacon_id` | `uint8` | Beacon sequence ID counter |
+| **6** | 1 B | `operating_mode` | `uint8` | `1` = Default Mode, `2` = LEOP (Launch/Early Orbit) |
+| **7** | 1 B | `satellite_rssi` | `uint8` | Ground uplink RSSI recorded by satellite |
+| **8–9** | 2 B | `telecommand_count` | `uint16` | Total telecommands accepted by satellite |
+| **10** | 1 B | `eps_flags` | `uint8` | EPS status and subsystem power flags |
+| **11–12** | 2 B | `reboot_count` | `uint16` | Total OBC / EPS reboot counter |
+| **13–14** | 2 B | `battery_voltage` | `uint16` | Battery voltage ($V = \text{val} / 1000.0$ V) |
+| **15–18** | 4 B | `uptime_sec` | `uint32` | Satellite uptime in seconds |
+| **19–198** | 180 B | `sensor_data` | Array[9] | 9x Attitude sensor samples (Sun Sensor & Earth Sensor array) |
 
 ## 🛠️ GNU Radio Receiver Pipeline
 
