@@ -81,32 +81,43 @@ def parse_framsat_telemetry(payload_bytes: bytes):
 
 
 def parse_framsat_frame(frame_bytes: bytes):
-  """Parses a received AX.25 UI frame."""
-  if len(frame_bytes) < 16:
-    print("[-] Frame rejected: Length is less than 16 bytes.")
+  """Parses a received frame (handles both direct HDLC and AX.25 UI frames)."""
+  if len(frame_bytes) < 5:
+    print("[-] Frame rejected: Length is less than 5 bytes.")
     return
-
-  dest_call = "".join(chr(b >> 1) for b in frame_bytes[0:6]).strip()
-  src_call = "".join(chr(b >> 1) for b in frame_bytes[7:13]).strip()
-  control_byte = frame_bytes[14]
-  pid_byte = frame_bytes[15]
-  payload_raw = frame_bytes[16:]
 
   now_utc = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
 
   print("\n" + "=" * 65)
   print(f"🛰️  FramSat-1 Frame Received at {now_utc}")
-  print(f"   Destination:        {dest_call}")
-  print(f"   Source:             {src_call} (Expected: {EXPECTED_CALLSIGN})")
-  print(f"   Control:            0x{control_byte:02X} (UI-Frame)")
-  print(f"   PID:                0x{pid_byte:02X}")
   print(f"   Total Frame Length: {len(frame_bytes)} bytes")
 
-  if payload_raw.startswith(b"FS1.0"):
-    parse_framsat_telemetry(payload_raw)
+  # CASE 1: Direct HDLC beacon from real satellite (starts with "FS1.0" at byte 0)
+  if frame_bytes.startswith(b"FS1.0"):
+    print("   Framing Type:       Direct HDLC (No AX.25 callsign header)")
+    parse_framsat_telemetry(frame_bytes)
+
+  # CASE 2: Encapsulated in AX.25 UI-frame (starts with "FS1.0" at byte 16)
+  elif len(frame_bytes) >= 16 and frame_bytes[16:].startswith(b"FS1.0"):
+    dest_call = "".join(chr(b >> 1) for b in frame_bytes[0:6]).strip()
+    src_call = "".join(chr(b >> 1) for b in frame_bytes[7:13]).strip()
+    control_byte = frame_bytes[14]
+    pid_byte = frame_bytes[15]
+
+    print("   Framing Type:       AX.25 UI-Frame")
+    print(f"   Destination:        {dest_call}")
+    print(f"   Source:             {src_call} (Expected: {EXPECTED_CALLSIGN})")
+    print(f"   Control:            0x{control_byte:02X} (UI-Frame)")
+    print(f"   PID:                0x{pid_byte:02X}")
+    parse_framsat_telemetry(frame_bytes[16:])
+
+  # CASE 3: Generic text or raw payload
   else:
-    print(f"   Payload Text:       '{payload_raw.decode('latin-1', 'replace')}'")
-    print(f"   Payload Hex:        {payload_raw.hex().upper()}")
+    print(
+        f"   Payload Text:      "
+        f" '{frame_bytes.decode('latin-1', 'replace')}'"
+    )
+    print(f"   Payload Hex:        {frame_bytes.hex().upper()}")
 
   print("=" * 65 + "\n")
 
