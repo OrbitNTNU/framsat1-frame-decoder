@@ -27,7 +27,7 @@ FramSat-1 transmits periodic AX.25 UI telemetry beacons on the 70 cm amateur sat
 | **Pulse Shaping** | Gaussian ($BT = 0.5$ / $BT = 1.0$) |
 | **Scrambler** | G3RUH ($1 + x^{12} + x^{17}$, Mask: `0x21`) |
 | **Bit Encoding** | NRZI |
-| **Frame Format** | AX.25 UI-Frame (Unnumbered Information) |
+| **Frame Format** | Direct HDLC (or encapsulated AX.25 UI-Frame) |
 | **Satellite Callsign (Source)** | `LA1ORB` |
 | **Destination Address** | `CQ` |
 | **PID** | `0xF0` (No Layer 3 Protocol) |
@@ -36,7 +36,7 @@ FramSat-1 transmits periodic AX.25 UI telemetry beacons on the 70 cm amateur sat
 
 ## 📊 Housekeeping Telemetry Format
 
-Every telemetry beacon begins at AX.25 payload offset index 16. All multi-byte integers are encoded in standard Little-Endian format (least significant byte first):
+Telemetry beacons are transmitted as packed binary frames starting with signature `"FS1.0"` (at byte offset 0 for direct HDLC, or offset 16 if encapsulated in AX.25). All multi-byte integers are in Little-Endian format (least significant byte first):
 
 | Offset | Size | Field | Type | Description |
 | :---: | :---: | :--- | :---: | :--- |
