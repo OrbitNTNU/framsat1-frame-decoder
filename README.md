@@ -31,8 +31,6 @@ FramSat-1 transmits periodic direct HDLC-framed telemetry beacons on the 70 cm a
 | **Frame Format** | Direct Synchronous HDLC (compatible with AX.25 UI encapsulation) |
 | **Frame Length** | **209 bytes fixed** (6 B transport header + 199 B telemetry payload + 4 B CRC) |
 | **Telemetry Identifier** | `FS1.0` |
-| **Satellite Callsign (IARU)** | `LA1ORB` |
-| **Ground Station Callsign** | `LA1NGS` |
 
 ---
 
