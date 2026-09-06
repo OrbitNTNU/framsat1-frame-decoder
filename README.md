@@ -1,6 +1,6 @@
 # 🛰️ FramSat-1 Downlink Reception & Telemetry Decoder
 
-Open-source GNU Radio Companion (GRC) receiver pipeline and Python frame decoder for the **FramSat-1** CubeSat by [Orbit NTNU](https://orbitntnu.com).
+Open-source GNU Radio Companion (GRC) receiver pipeline and Python telemetry decoder for the **FramSat-1** CubeSat by [Orbit NTNU](https://orbitntnu.com).
 
 FramSat-1 transmits periodic direct HDLC-framed telemetry beacons on the 70 cm amateur satellite band. This repository provides amateur radio operators with everything needed to receive, demodulate, and extract raw packet frames and sensor telemetry.
 
@@ -28,14 +28,19 @@ FramSat-1 transmits periodic direct HDLC-framed telemetry beacons on the 70 cm a
 | **Pulse Shaping** | Gaussian ($BT = 0.5$ / $BT = 1.0$) |
 | **Scrambler** | G3RUH ($1 + x^{12} + x^{17}$, Mask: `0x21`) |
 | **Bit Encoding** | NRZI |
-| **Frame Format** | Direct HDLC (with standard CRC-16-CCITT FCS) |
+| **Frame Format** | Direct Synchronous HDLC (compatible with AX.25 UI encapsulation) |
+| **Frame Length** | **209 bytes fixed** (6 B transport header + 199 B telemetry payload + 4 B CRC) |
 | **Telemetry Identifier** | `FS1.0` |
+| **Satellite Callsign (IARU)** | `LA1ORB` |
+| **Ground Station Callsign** | `LA1NGS` |
 
 ---
 
 ## 📊 Housekeeping Telemetry Format
 
-The telemetry beacon begins with the static signature `"FS1.0"` (located at **byte offset 6** following the 6-byte onboard transport header, or offset 0 in deframed payload). All multi-byte numeric fields are serialized in standard **Big-Endian** format (network byte order, MSB first):
+The telemetry beacon begins with the static signature `"FS1.0"` (located at **byte offset 6** following the 6-byte onboard transport header). All multi-byte numeric fields are serialized in standard **Big-Endian** format (network byte order, MSB first).
+
+In LEOP deployment mode (`operating_mode = 2`), the 180-byte attitude sensor payload array is zero-padded while sensors remain unpowered to conserve power.
 
 | Offset | Size | Field | Type | Description |
 | :---: | :---: | :--- | :---: | :--- |
@@ -54,7 +59,7 @@ The telemetry beacon begins with the static signature `"FS1.0"` (located at **by
 
 ## 🛠️ GNU Radio Receiver Pipeline
 
-> **Prerequisites:** Requires GNU Radio with `gr-satellites` and `gr-osmosdr` installed (both are included out-of-the-box in [Radioconda](https://github.com/radioconda)).
+> **Prerequisites:** Requires GNU Radio with `gr-satellites` and `gr-osmosdr` installed (both are included out-of-the-box in [Radioconda](https://github.com/ryanvolz/radioconda)).
 
 The recommended receiver flowgraph (`framsat1_rtlsdr_rx.grc`) is optimized for standard **RTL-SDR** dongles:
 
@@ -86,9 +91,35 @@ python3 framsat1_decoder.py --listen
 ```
 
 ### Mode 3: Offline Frame Inspection
-Pass a received hexadecimal string as a command-line argument to parse historical or recorded frames:
+Pass a received hexadecimal string as a command-line argument to parse historical or recorded frames.
+
+**Test against verified on-orbit LEOP frame (Beacon #181, 8.308 V Battery, 13.46 hours uptime):**
 ```bash
-python3 framsat1_decoder.py 8500850000CF4653312E303B0200000000000011DBA00001C0B00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000C409DD80
+python3 framsat1_decoder.py 8500850000cf4653312e30b50200000000000120740000bd59000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000ce47af75
+```
+
+**Expected terminal output:**
+```text
+=================================================================
+🛰️  FramSat-1 Frame Received at ...
+   Total Frame Length: 209 bytes
+   Telemetry Found:    Offset index 6
+   Transport Header:   8500850000CF (6 bytes)
+
+   ─── [ FramSat-1 Housekeeping Telemetry ] ───
+   Signature:             FS1.0
+   Beacon ID:             #181
+   Operating Mode:        LEOP (Launch / Deployment Mode)
+   Satellite Uplink RSSI: N/A (No uplink signal received)
+   Telecommands Accepted: 0
+   EPS Flags:             0x00
+   OBC / EPS Reboot Count:1
+   Battery Voltage:       8.308 V (8308 mV)
+   Satellite Uptime:      48473 s (13.46 hours)
+
+   ─── [ Attitude Sensors (LEOP Mode) ] ───
+   Status:                Sensors unpowered during deployment (180 bytes zero-padded).
+=================================================================
 ```
 
 ---
