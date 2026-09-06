@@ -10,7 +10,7 @@ EXPECTED_CALLSIGN = "LA1ORB"
 def parse_framsat_telemetry(payload_bytes: bytes):
   """Parses the FramSat-1 Housekeeping Telemetry struct (fs_bcn)."""
   # 1. Parse Health & Status Header (19 bytes)
-  fmt_health = "<5sBBBHBHHI"
+  fmt_health = ">5sBBBHBHHI"
   hdr_size = struct.calcsize(fmt_health)
 
   if len(payload_bytes) < hdr_size:
@@ -38,7 +38,7 @@ def parse_framsat_telemetry(payload_bytes: bytes):
   print(f"   Satellite Uptime:   {uptime} s ({uptime_hrs:.2f} hours)")
 
   # 2. Parse 9x Payload Sensor Samples (GSS Sun Sensor & ESS Earth Sensor)
-  sensor_bytes = payload_bytes[hdr_size:]
+  sensor_bytes = payload_bytes[hdr_size:-4].ljust(180, b"\x00")
   num_samples = len(sensor_bytes) // 20
 
   if num_samples > 0:
