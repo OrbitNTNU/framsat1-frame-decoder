@@ -97,4 +97,4 @@ python3 framsat1_decoder.py 8500850000CF4653312E303B0200000000000011DBA00001C0B0
 For complete technical details, download the included [FramSat_1_Reception_Guide.pdf](FramSat_1_Reception_Guide.pdf).
 
 ## 📬 Submitting Reception Reports
-We welcome reception reports and baseband recordings! Please submit reports via email to **contact@orbitntnu.com** or upload observations to the **[SatNOGS Network](https://db.satnogs.org/)** under satellite **FramSat-1**.
+We welcome reception reports and baseband recordings! Please submit reports via email to **satcom@orbitntnu.com** or upload observations to the **[SatNOGS Network](https://db.satnogs.org/)** under satellite **FramSat-1**.
