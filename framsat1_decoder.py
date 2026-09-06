@@ -5,25 +5,17 @@ Licensed under MIT License.
 """
 
 from datetime import datetime, timezone
-import json
 import socket
 import struct
 import sys
 
+EXPECTED_CALLSIGN = "LA1ORB"
+GROUND_STATION_CALLSIGN = "LA1NGS"
 
 
 def parse_framsat_telemetry(payload_bytes: bytes):
   """Parses FramSat-1 Housekeeping Telemetry (starting with 'FS1.0')."""
   # 1. Health & Status Header (19 bytes, Big-Endian)
-  # 5s: signature ("FS1.0")
-  # B:  id (uint8_t)
-  # B:  type (1=DEFAULT, 2=LEOP)
-  # B:  rssi (uint8_t)
-  # H:  telecommand_count (uint16_t)
-  # B:  eps_flags (uint8_t)
-  # H:  reboot_count (uint16_t)
-  # H:  battery_voltage (uint16_t, mV)
-  # I:  uptime_sec (uint32_t, seconds)
   fmt_health = ">5sBBBHBHHI"
   hdr_size = struct.calcsize(fmt_health)
 
@@ -42,12 +34,13 @@ def parse_framsat_telemetry(payload_bytes: bytes):
   )
   v_bat = v_mv / 1000.0
   uptime_hrs = uptime / 3600.0
+  rssi_str = f"-{rssi} dBm" if rssi > 0 else "N/A (No uplink signal received)"
 
   print("\n   ─── [ FramSat-1 Housekeeping Telemetry ] ───")
   print(f"   Signature:             {sign.decode('ascii', errors='replace')}")
   print(f"   Beacon ID:             #{bcn_id}")
   print(f"   Operating Mode:        {mode_str}")
-  print(f"   Satellite Uplink RSSI: -{rssi} dBm")
+  print(f"   Satellite Uplink RSSI: {rssi_str}")
   print(f"   Telecommands Accepted: {cmd_count}")
   print(f"   EPS Flags:             0x{eps_flags:02X}")
   print(f"   OBC / EPS Reboot Count:{reboots}")
@@ -126,6 +119,7 @@ def parse_framsat_frame(frame_bytes: bytes):
       dest_call = "".join(chr(b >> 1) for b in frame_bytes[0:6]).strip()
       src_call = "".join(chr(b >> 1) for b in frame_bytes[7:13]).strip()
       print(f"   Encapsulation:      AX.25 UI-Frame ({src_call} -> {dest_call})")
+      print(f"   Source:             {src_call} (Expected: {EXPECTED_CALLSIGN})")
     elif idx > 0:
       print(
           f"   Transport Header:   {frame_bytes[:idx].hex().upper()} ({idx}"
@@ -163,22 +157,32 @@ def listen_live_gnuradio(host="127.0.0.1", port=52001):
 
 
 if __name__ == "__main__":
-  # Verified On-Orbit SatNOGS Downlink Frame (LEOP Mode, 197 bytes)
-  DEFAULT_TEST_FRAME = (
-      "8500850000CF4653312E30B2020000000000011E57000012EF"
-      + "00" * 168
-      + "71B5004F"
+  # Verified On-Orbit SatNOGS Downlink Frame (209 bytes, 11:01 UTC, 8.308 V Battery)
+  VERIFIED_ON_ORBIT_FRAME = (
+      "8500850000CF4653312E30B50200000000000120740000BD59"
+      + "00" * 180
+      + "CE47AF75"
   )
 
   if len(sys.argv) > 1:
     if sys.argv[1] == "--listen":
       listen_live_gnuradio()
     else:
-      raw_hex = sys.argv[1].replace(" ", "")
+      # Strip spaces, newlines, and carriage returns for clean copy-pasting
+      raw_hex = (
+          sys.argv[1]
+          .replace(" ", "")
+          .replace("\n", "")
+          .replace("\r", "")
+          .replace("0x", "")
+      )
       parse_framsat_frame(bytes.fromhex(raw_hex))
   else:
-    print("[*] No arguments provided. Running test against verified LEOP frame:")
-    parse_framsat_frame(bytes.fromhex(DEFAULT_TEST_FRAME))
+    print(
+        "[*] No arguments provided. Running test against verified on-orbit"
+        " frame:\n"
+    )
+    parse_framsat_frame(bytes.fromhex(VERIFIED_ON_ORBIT_FRAME))
     print("Usage:")
     print("  python3 framsat1_decoder.py <HEX_STRING>")
     print("  python3 framsat1_decoder.py --listen")
